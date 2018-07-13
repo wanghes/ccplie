@@ -7,6 +7,7 @@ const fs = require("fs");
 const execSync = require('child_process').execSync;
 const version = require("../package.json").version;
 
+
 commander
   	.version(version, "-V, --version")
 
@@ -92,7 +93,7 @@ const release = async() => {
   			process.exit();
   		} else {
   			projectName = args[0];
-  			const tempPath = process.cwd() + '/src/'+ projectName;
+  			const tempPath = process.cwd() + '/src/pages/'+ projectName;
   			if (!projectName) {
 		      	projectName = await setProjectName();
 		    }
@@ -105,7 +106,7 @@ const release = async() => {
 
     const tplName = await tpl();
     const directory = type(tplName.flag);
-    const pathView = process.cwd() + '/src/'+ projectName;
+    const pathView = process.cwd() + '/src/pages/'+ projectName;
     renderView(directory, tplName.flag, pathView, projectName);
 
 
@@ -129,3 +130,4 @@ release().catch(err => {
     console.error(err.red);
     process.exit();
 });;
+

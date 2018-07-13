@@ -1,17 +1,17 @@
 {
   "name": "ccplie",
-  "version": "1.0.1",
+  "version": "1.0.8",
   "description": "a vue template tool",
   "main": "bin/index.js",
+  "bin": {
+    "ccplie": "bin/index.js"
+  },
   "scripts": {
     "start": "npm publish ."
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/wanghes/ccplie"
-  },
-  "bin": {
-    "ccplie": "bin/index.js"
   },
   "author": "wanghes",
   "license": "MIT",
