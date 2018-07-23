@@ -12,8 +12,8 @@ commander
   	.version(version, "-V, --version")
 
 commander
-    .option('-d, --directory', 'Add vue directory')
     .alias('ccpl')
+    .option('-d, --directory', 'Add vue directory')
     .option('-t, --template', 'Add a vue template')
 
 commander.parse(process.argv);
@@ -59,8 +59,8 @@ const tpl = async () => {
                 value: "index"
             },
             {
-                name: "modal template",
-                value: "edit"
+                name: "form template",
+                value: "form"
             }
         ]
     });
@@ -68,10 +68,10 @@ const tpl = async () => {
 
 
 const type = (tpl) => {
-    const edit = path.resolve(__dirname, '..', 'model', 'edit.vue');
+    const form = path.resolve(__dirname, '..', 'model', 'form.vue');
     const index = path.resolve(__dirname, '..', 'model', 'index.vue');
     return {
-        edit,
+        form,
         index
     }[tpl];
 }

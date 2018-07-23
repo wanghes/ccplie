@@ -1,7 +1,7 @@
 <template>
     <div class="content">
-        <div :class="!!isPull ? 'select-form-pull' :'select-form'" ref="domSel" >
-            <el-form :inline="true" :label-position="labelPosition" :model="searchDatas" class="demo-form-inline" size="mini">
+        <g7-search-box>
+            <el-form :inline="true" label-position="top" :model="searchDatas" class="demo-form-inline" size="mini">
                 <el-row justify="start" :gutter="10">
                     <el-col :xs="24" :sm="20" :md="20" :lg="20" :xl="20">
                         <el-col :xs="24" :sm="12" :md="12" :lg="8" :xl="6">
@@ -80,36 +80,32 @@
                     </el-col>
                 </el-row>
             </el-form>
-        </div>
-        <div class="border-form">
-            <span @click="pullForm" style="background: #e10032">
-                <i :class="!!isPull? 'el-icon-arrow-up' : 'el-icon-arrow-down'" style="font-size: 12px;"></i>
-            </span>
-        </div>
+        </g7-search-box>
+
         <g7Buttons :buttonsGroup="buttonsGroup" @onAddClick="onAddClick" @onEditClick="onEditClick" @delList="delList"></g7Buttons>
 
-        <g7Table :tableHeaderDatas="tableHeaderDatas" :tableDatas="tableDatas" :paginationDatas="paginationDatas" @handleSelectionChange="handleSelectionChange" @handleSizeChange="handleSizeChange" @handleCurrentChange="handleCurrentChange"></g7Table>
+        <g7Table :tableHeaderDatas="tableHeaderDatas" :tableDatas="tableDatas" :paginationDatas="paginationDatas" @handleSelectionChange="handleSelectionChange" @handleSizeChange="handleSizeChange" @handleCurrentChange="handleCurrentChange" ></g7Table>
 
         <el-dialog title="新增用户" width="50%" :visible.sync="addFormVisible">
             <form-wrapper :formData="rowData" ref="addForm"></form-wrapper>
             <div slot="footer" class="dialog-footer">
-                <el-button type="primary" @click="submitForm('addForm')">确 定</el-button>
-                <el-button @click="resetForm('addForm')">取 消</el-button>
+                <el-button type="primary" @click="submitForm('addForm')">保 存</el-button>
+                <el-button @click="resetForm('addForm')">关 闭</el-button>
             </div>
         </el-dialog>
 
-        <el-dialog title="编辑用户" width="50%" :visible.sync="editFormVisible">
+        <el-dialog title="编辑用户" width="50%" append-to-body :visible.sync="editFormVisible">
             <form-wrapper :formData="rowData" ref="editForm"></form-wrapper>
             <div slot="footer" class="dialog-footer">
-                <el-button type="primary" @click="submitForm('editForm')">确 定</el-button>
-                <el-button @click="resetForm('editForm')">取 消</el-button>
+                <el-button type="primary" @click="submitForm('editForm')">保 存</el-button>
+                <el-button @click="resetForm('editForm')">关 闭</el-button>
             </div>
         </el-dialog>
     </div>
 </template>
 
 <script>
-    import { mapActions, mapGetters } from 'vuex';
+    import { mapActions, mapMutations, mapGetters } from 'vuex';
     import formWrapper from './form';
 
     export default {
@@ -124,11 +120,6 @@
                     idCard: '',
                     operator: '',
                 },
-                labelPosition: 'top',
-                isPull: false,
-                isHeight: false,
-                currentPage: 4,
-                totalPage: 100,
                 editFormVisible: false,
                 rowData: {},
                 buttonsGroup: [{
@@ -219,39 +210,24 @@
         mounted() {
             this.getUserlist();
         },
-        filters: {
-            statusFilter(val) {
-                if (val === 1) {
-                    return '启用';
-                }
-                if (val === 2) {
-                    return '禁用';
-                }
-            },
-        },
         methods: {
             ...mapActions('user', [
                 'getUserLists',
                 'deleteUserLists',
-                'uploadUserLists',
                 'addUserLists',
+            ]),
+            ...mapMutations('user', [
+                'upDateUserLists',
             ]),
             getUserlist() {
                 const datas = {
                     limit: 10,
                     page: this.paginationDatas.page,
                 };
-                this.getUserLists(datas);
+                return this.getUserLists(datas);
             },
             handleClickFn(e) {
                 console.log(e);
-            },
-            pullForm() {
-                const me = this;
-                me.isPull = !me.isPull;
-                window.setTimeout(() => {
-                    me.isHeight = !me.isHeight;
-                }, 0);
             },
             handleSelectionChange(val) {
                 this.multipleSelection = val.map(item => item.id);
@@ -260,15 +236,17 @@
             handleSelectionRow(row) {
                 this.$refs.multipleTable.toggleRowSelection(row);
             },
-            delList() {
+            async delList() {
                 const data = {
                     id: this.multipleSelection,
                 };
-                this.$confirm('确认删除该数据吗?', '提示', {
+                const confirmStatus = await this.$confirm('确认删除该数据吗?', '提示', {
                     type: 'warning',
-                }).then(() => {
-                    this.deleteUserLists(data);
                 });
+                if (confirmStatus) {
+                    const deleteStatus = await this.deleteUserLists(data);
+                    deleteStatus && this.getUserlist();
+                }
             },
             handleSizeChange(val) {
                 console.log(`每页 ${val} 条`);
@@ -287,7 +265,7 @@
                 this.addFormVisible = val;
             },
             onEditClick() {
-                this.rowData = Object.assign({}, this.multipleSelections[0]);
+                this.rowData = { ...this.multipleSelections[0] };
                 this.editFormVisible = true;
             },
             onEditVisibleChange(val) {
@@ -299,12 +277,23 @@
                 this.editFormVisible = false;
             },
             submitForm(formName) {
-                this.$refs[formName].$refs.userForm.validate((valid) => {
-                    if (!valid) {
-                        return false;
+                this.$refs[formName].$refs.userForm.validate().then(async () => {
+                    const subData = { ...this.rowData };
+                    if (formName === 'editForm') {
+                        await this.upDateUserLists(subData);
+                        this.resetForm('editForm');
+                        this.editFormVisible = false;
+                    } else if (formName === 'addForm') {
+                        await this.addUserLists(this.rowData);
+                        await this.getUserlist();
+                        this.resetForm('addForm');
+                        this.addFormVisible = false;
                     }
-                    this.uploadUserLists(this.rowData);
+                }).catch((e) => {
+                    console.log(e);
                 });
+
+                return false;
             },
         },
     };
